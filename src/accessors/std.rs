@@ -14,6 +14,7 @@ impl<'a,T> StdNCDReadMutAccessor<'a,T> where T: Read+Seek {
     }
 }
 
+// XXX verify spec
 impl<'a,T> NCDReadAccessor for StdNCDReadMutAccessor<'a,T> where T: Read+Seek {
     fn read(&mut self, offset: u64, length: u64) -> io::Result<Vec<u8>> {
         self.inner.seek(SeekFrom::Start(offset))?;
