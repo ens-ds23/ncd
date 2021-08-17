@@ -172,9 +172,10 @@ pub(crate) fn bounds_check(heap: &[u8], offset: usize, length: usize) -> Result<
     }
 }
 
-pub(crate) fn compute_hash(key: &[u8]) -> Result<u128,NCDError> {
+pub(crate) fn compute_hash(key: &[u8]) -> Result<u64,NCDError> {
     let mut hash_key = BufReader::new(key);
-    wrap_io_error(murmur3_x64_128(&mut hash_key,0))
+    let value = wrap_io_error(murmur3_x64_128(&mut hash_key,0))?;
+    Ok((value >> 64) as u64)
 }
 
 #[cfg(test)]
@@ -182,7 +183,7 @@ mod test {
     use crate::{bitbash::{MAX_LESQLITE2_BYTES, all_set, bounds_check, compute_hash, lesqlite2_read, lesqlite2_write, read_bytes, read_u16, read_u32, read_u64, read_uvar, write_bytes, write_u16, write_u32, write_u64, write_uvar}, util::NCDError};
 
     fn do_test_hash() -> Result<(),NCDError> {
-        assert_eq!(0x5b1e906a48ae1d19cbd8a7b341bd9b02,compute_hash(b"hello")?);
+        assert_eq!(0x5b1e906a48ae1d19,compute_hash(b"hello")?);
         assert_eq!(0,compute_hash(b"")?);
         Ok(())
     }

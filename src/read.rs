@@ -44,7 +44,13 @@ impl NCDLookupResult {
                 let bytes = wrap_io_error(reader.accessor().read(offset,size))?;
                 let entry = parse_entry(&bytes, 0)?;
                 match entry {
-                    NCDLookupResult::Internal(_,v) => Ok(NCDLookupEntry::Value(v)),
+                    NCDLookupResult::Internal(k,v) => {
+                        if k == key {
+                            return Ok(NCDLookupEntry::Value(v));
+                        } else {
+                            return Ok(NCDLookupEntry::Skip);
+                        }
+                    },
                     NCDLookupResult::Empty => Ok(NCDLookupEntry::Finish),
                     NCDLookupResult::External(_,_,_) => {
                         return Err(NCDError::CorruptNCDFile(format!("recursive external reference")))
@@ -60,9 +66,9 @@ pub(crate) fn parse_entry(heap: &[u8], offset: usize) -> Result<NCDLookupResult,
     let key_len = lesqlite2_read(heap,&mut offset)?;
     if key_len == 0 {
         /* external */
-        bounds_check(heap,offset,16)?;
         let ext_offset = lesqlite2_read(heap,&mut offset)?;
         let ext_length = lesqlite2_read(heap,&mut offset)?;
+        bounds_check(heap,offset,4)?;
         let hash = read_u32(heap, &mut offset)?;
         return Ok(NCDLookupResult::External(ext_offset,ext_length,hash));
     } else {
@@ -122,7 +128,7 @@ impl NCDPage {
         parse_entry(&self.heap,offset)
     }
 
-    fn scan(&self, reader: &mut NCDFileReader, key: &[u8], hash: u128) -> Result<Option<Vec<u8>>,NCDError> {
+    fn scan(&self, reader: &mut NCDFileReader, key: &[u8], hash: u64) -> Result<Option<Vec<u8>>,NCDError> {
         let header = reader.header();
         if header.table_size_entries() == 0 {
             return Ok(None);
@@ -214,14 +220,14 @@ mod test {
             NCDLookupResult::External(_,_,_) => {},
             _ => { assert!(true); }
         }
-        let value = page.lookup(0)?.resolve(&mut reader,b"ByeBye!")?;
+        let value = page.lookup(0)?.resolve(&mut reader,b"Goodbye")?;
         assert_eq!(NCDLookupEntry::Value(b"Mars".to_vec()),value);
         let value = page.lookup(2)?.resolve(&mut reader,b"e")?;
         assert_eq!(NCDLookupEntry::Value(b"f".to_vec()),value);
         let value = page.scan(&mut reader,b"e",compute_hash(b"e")?)?;
         assert_eq!(value,Some(b"f".to_vec()));
         assert_eq!(Some(b"World".to_vec()),reader.lookup(b"Hello")?);
-        assert_eq!(Some(b"Mars".to_vec()),reader.lookup(b"ByeBye!")?);
+        assert_eq!(Some(b"Mars".to_vec()),reader.lookup(b"Goodbye")?);
         assert_eq!(None,reader.lookup(b"v")?);
         Ok(())
     }

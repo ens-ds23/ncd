@@ -95,18 +95,18 @@ impl NCDHeader {
         self.page_offset(page_index+1) - 4
     }
 
-    pub fn hash_page_index(&self, hash: u128) -> u64 {
+    pub fn hash_page_index(&self, hash: u64) -> u64 {
         if self.table_size == 0 { return 0; }
-        ((hash/self.table_size as u128) % self.number_of_pages as u128) as u64
+        ((hash/self.table_size as u64) % self.number_of_pages as u64) as u64
     }
 
-    pub fn hash_page_slot(&self, hash: u128) -> u32 {
-        (hash%self.table_size as u128) as u32
+    pub fn hash_page_slot(&self, hash: u64) -> u32 {
+        (hash%self.table_size as u64) as u32
     }
 
-    pub fn hash_ext(&self, hash: u128) -> u32 {
+    pub fn hash_ext(&self, hash: u64) -> u32 {
         if self.table_size == 0 || self.number_of_pages == 0 { return 0; }
-        (hash/(self.table_size as u128)/(self.number_of_pages as u128)) as u32
+        (hash/(self.table_size as u64)/(self.number_of_pages as u64)) as u32
     }
 
     pub(crate) fn structured_size(&self) -> u64 { self.page_offset(self.number_of_pages) }
