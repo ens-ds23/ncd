@@ -115,7 +115,7 @@ fn initial_header_guess(config: &NCDBuildConfig, stats: &NCDStats, stamp: u32) -
     let entries_per_page = guess_entries_par_page(stats,number_of_pages);
     let table_size_entries = (entries_per_page as f64 / config.target_load_factor as f64) as u32 + 1;
     let table_size_bytes = table_size_entries * (pointer_size_k as u32);
-    let heap_size = (config.target_page_size - table_size_bytes).max(HEADER_SIZE as u32);
+    let heap_size = (config.target_page_size - table_size_bytes - 4).max(HEADER_SIZE as u32);
     let external_minimum = config.external_trheshold * (heap_size as f64);
     Ok((NCDHeader::new(number_of_pages,heap_size,table_size_entries,config.force_header_size,stamp)?,(external_minimum as u64).max(16)))
 }
@@ -342,18 +342,21 @@ mod tests {
     fn header_test(config: &NCDBuildConfig, number_of_keys: u64, length_each: u64) -> Result<(u64,u32,u32,u64),NCDError> {
         let stats = NCDStats::new_values(number_of_keys,number_of_keys*length_each);
         let (header,threshold) = initial_header_guess(config,&stats,0)?;
+        if header.table_size_entries() > 0 {
+            assert_eq!(32768,header.page_size());
+        }
         Ok((header.number_of_pages(),header.heap_size(),header.table_size_entries(),threshold))
     }
 
     fn do_test_header() -> Result<(),NCDError> {
         let config = NCDBuildConfig::new();
-        assert_eq!((395,31754,507,3175),header_test(&config, 100000, 100)?);
+        assert_eq!((395,31750,507,3175),header_test(&config, 100000, 100)?);
         assert_eq!((1,28,0,0),header_test(&config, 0, 0)?);
-        assert_eq!((1,32762,3,3276),header_test(&config, 1, 0)?);
-        assert_eq!((1,32726,21,3272),header_test(&config, 10, 10)?);
-        assert_eq!((1,32366,201,3236),header_test(&config, 100, 100)?);
-        assert_eq!((39,32762,3,3276),header_test(&config, 10, 100000)?);
-        assert_eq!((17,9238,11765,923),header_test(&config, 100000, 1)?);
+        assert_eq!((1,32758,3,3275),header_test(&config, 1, 0)?);
+        assert_eq!((1,32722,21,3272),header_test(&config, 10, 10)?);
+        assert_eq!((1,32362,201,3236),header_test(&config, 100, 100)?);
+        assert_eq!((39,32758,3,3275),header_test(&config, 10, 100000)?);
+        assert_eq!((17,9234,11765,923),header_test(&config, 100000, 1)?);
         Ok(())
     }
 
