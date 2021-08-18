@@ -1,5 +1,6 @@
 use std::fs::File;
 use std::io::{Seek, SeekFrom, Write};
+use crate::NCDBuildConfig;
 use crate::bitbash::{all_set, read_u32, read_u64, write_u32, write_u64};
 use crate::read::{NCDReadAccessor};
 use crate::util::{NCDError, wrap_io_error};
@@ -106,7 +107,7 @@ impl NCDHeader {
 
     pub fn hash_ext(&self, hash: u64) -> u32 {
         if self.table_size == 0 || self.number_of_pages == 0 { return 0; }
-        (hash/(self.table_size as u64)/(self.number_of_pages as u64)) as u32
+        ((hash/(self.table_size as u64)/(self.number_of_pages as u64)) &0xFFFFFFFF) as u32
     }
 
     pub(crate) fn structured_size(&self) -> u64 { self.page_offset(self.number_of_pages) }

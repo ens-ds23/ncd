@@ -137,7 +137,6 @@ impl<'a> NCDBuild<'a> {
     pub fn result(&self) -> &str { &self.failure_reason }
 
     fn crank_page_count(&self) -> Result<NCDHeader,NCDError> {
-        // XXX crank to header
         let new_pages = self.header.number_of_pages() as f64 * self.config.rebuild_page_factor;
         NCDHeader::new(new_pages as u64,self.header.heap_size(),self.header.table_size_entries(),self.config.force_header_size,self.header.stamp())
     }
@@ -197,7 +196,7 @@ mod tests {
     use crate::StdNCDReadMutAccessor;
     use crate::build::{NCDBuild, NCDBuildConfig};
     use crate::header::NCDHeader;
-    use crate::read::{NCDFileReader };
+    use crate::read::{ NCDReader };
     use crate::sources::hashmap::NCDHashMapValueSource;
     use crate::test::{numeric_key_values, temporary_path};
     use crate::util::{NCDError, wrap_io_error};
@@ -226,7 +225,7 @@ mod tests {
         /**/
         let mut file = wrap_io_error(File::open(tmp_filename))?;
         let std = wrap_io_error(StdNCDReadMutAccessor::new(&mut file))?;
-        let mut reader = NCDFileReader::new(std)?;
+        let mut reader = NCDReader::new(std)?;
         let kv = numeric_key_values(COUNT);
         let mut k_sorted = kv.keys().collect::<Vec<_>>();
         k_sorted.sort();
@@ -264,7 +263,7 @@ mod tests {
         /**/
         let mut file = wrap_io_error(File::open(tmp_filename))?;
         let std = wrap_io_error(StdNCDReadMutAccessor::new(&mut file))?;
-        let mut reader = NCDFileReader::new(std)?;
+        let mut reader = NCDReader::new(std)?;
         let kv = numeric_key_values(COUNT);
         let mut k_sorted = kv.keys().collect::<Vec<_>>();
         k_sorted.sort();
@@ -317,7 +316,7 @@ mod tests {
         /**/
         let mut file = wrap_io_error(File::open(tmp_filename))?;
         let std = wrap_io_error(StdNCDReadMutAccessor::new(&mut file))?;
-        let mut reader = NCDFileReader::new(std)?;
+        let mut reader = NCDReader::new(std)?;
         let header = reader.testharness_header();
         *header =  NCDHeader::new(header.number_of_pages(),header.heap_size(),header.table_size_entries(),None,0x99999999)?;
         let kv = numeric_key_values(COUNT);

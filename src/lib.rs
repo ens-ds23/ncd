@@ -20,7 +20,7 @@ mod write;
 mod test;
 
 pub use crate::build::{ NCDBuildConfig, NCDBuild };
-pub use crate::read::{ NCDFileReader, NCDReadAccessor };
+pub use crate::read::{ NCDReader, NCDReadAccessor };
 pub use crate::util::{ NCDError, wrap_io_error };
 pub use crate::write::NCDValueSource;
 

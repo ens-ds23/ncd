@@ -121,7 +121,7 @@ impl NCDValueSource for NCDFlatSource {
 #[cfg(test)]
 mod test {
     use std::{fs::File, io::{BufRead, BufReader}, path::{Path}};
-    use crate::{StdNCDReadMutAccessor, build::{NCDBuild, NCDBuildConfig}, read::NCDFileReader, sources::flat::{NCDFlatConfig, NCDFlatSource}, test::{extract_all, temporary_path}, util::{NCDError, extract_whitespace, wrap_io_error}};
+    use crate::{StdNCDReadMutAccessor, build::{NCDBuild, NCDBuildConfig}, read::NCDReader, sources::flat::{NCDFlatConfig, NCDFlatSource}, test::{extract_all, temporary_path}, util::{NCDError, extract_whitespace, wrap_io_error}};
 
     fn do_test_flat() -> Result<(),NCDError> {
         let source_filename = Path::new(file!()).to_path_buf().parent().unwrap().join(Path::new("../../testdata/test_flat.txt"));
@@ -138,7 +138,7 @@ mod test {
         drop(builder);
         let mut tmp_file = wrap_io_error(File::open(&dest_path))?;
         let std = wrap_io_error(StdNCDReadMutAccessor::new(&mut tmp_file))?;
-        let mut reader = NCDFileReader::new(std)?;
+        let mut reader = NCDReader::new(std)?;
         let tmp_file = wrap_io_error(File::open(&source_filename))?;
         for line in BufReader::new(tmp_file).lines() {
             let line = wrap_io_error(line)?;

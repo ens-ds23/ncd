@@ -53,7 +53,7 @@ mod test {
 
     use gnudbm::GdbmOpener;
 
-    use crate::{StdNCDReadMutAccessor, build::{NCDBuild, NCDBuildConfig}, read::NCDFileReader, test::temporary_path, util::{NCDError, wrap_io_error}};
+    use crate::{StdNCDReadMutAccessor, build::{NCDBuild, NCDBuildConfig}, read::NCDReader, test::temporary_path, util::{NCDError, wrap_io_error}};
 
     use super::{NCDGdbmSource, wrap_db_error};
 
@@ -72,7 +72,7 @@ mod test {
         drop(builder);
         let mut tmp_file = wrap_io_error(File::open(&tmp_filename))?;
         let std = wrap_io_error(StdNCDReadMutAccessor::new(&mut tmp_file))?;
-        let mut reader = NCDFileReader::new(std)?;
+        let mut reader = NCDReader::new(std)?;
         let db = wrap_io_error(wrap_db_error(GdbmOpener::new().readonly(source_filename)))?;
         for (key,value) in db.iter() {
             let key = key.as_bytes();

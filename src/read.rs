@@ -26,7 +26,7 @@ enum NCDLookupEntry {
 }
 
 impl NCDLookupResult {
-    fn resolve(self, reader: &mut NCDFileReader, key: &[u8]) -> Result<NCDLookupEntry,NCDError> {
+    fn resolve(self, reader: &mut NCDReader, key: &[u8]) -> Result<NCDLookupEntry,NCDError> {
         match self {
             NCDLookupResult::Internal(k,v) => {
                 if key == k {
@@ -128,7 +128,7 @@ impl NCDPage {
         parse_entry(&self.heap,offset)
     }
 
-    fn scan(&self, reader: &mut NCDFileReader, key: &[u8], hash: u64) -> Result<Option<Vec<u8>>,NCDError> {
+    fn scan(&self, reader: &mut NCDReader, key: &[u8], hash: u64) -> Result<Option<Vec<u8>>,NCDError> {
         let header = reader.header();
         if header.table_size_entries() == 0 {
             return Ok(None);
@@ -148,18 +148,18 @@ impl NCDPage {
     }
 }
 
-pub struct NCDFileReader<'a> {
+pub struct NCDReader<'a> {
     reader: Box<dyn NCDReadAccessor + 'a>,
     header: NCDHeader
 }
 
-impl<'a> NCDFileReader<'a> { // XXX rename
-    pub fn new_box(mut reader: Box<dyn NCDReadAccessor + 'a>) -> Result<NCDFileReader<'a>,NCDError> {
+impl<'a> NCDReader<'a> {
+    pub fn new_box(mut reader: Box<dyn NCDReadAccessor + 'a>) -> Result<NCDReader<'a>,NCDError> {
         let header = NCDHeader::read(reader.as_mut())?;
-        Ok(NCDFileReader { reader, header })
+        Ok(NCDReader { reader, header })
     }
 
-    pub fn new<T>(reader: T) -> Result<NCDFileReader<'a>,NCDError> where T: NCDReadAccessor + 'a {
+    pub fn new<T>(reader: T) -> Result<NCDReader<'a>,NCDError> where T: NCDReadAccessor + 'a {
         Self::new_box(Box::new(reader))
     }
 
@@ -199,7 +199,7 @@ mod test {
 
     use tempfile::{NamedTempFile, tempfile};
 
-    use crate::{StdNCDReadMutAccessor, bitbash::{compute_hash, write_u32}, header::MAGIC_NUMBER, read::{NCDFileReader, NCDLookupEntry, NCDLookupResult}, test::{SMOKE_FILE, delete_if_exists, example_file, fuzz_scratch, tinker_with_data, update_header_stamp, update_table_stamp}, util::{NCDError, wrap_io_error}};
+    use crate::{StdNCDReadMutAccessor, bitbash::{compute_hash, write_u32}, header::MAGIC_NUMBER, read::{NCDReader, NCDLookupEntry, NCDLookupResult}, test::{SMOKE_FILE, delete_if_exists, example_file, fuzz_scratch, tinker_with_data, update_header_stamp, update_table_stamp}, util::{NCDError, wrap_io_error}};
 
     fn do_file_read_smoke() -> Result<(),NCDError> {
         let tmp_dir = temp_dir();
@@ -211,7 +211,7 @@ mod test {
         drop(tmp_file);
         let mut file = wrap_io_error(File::open(tmp_filename))?;
         let std = wrap_io_error(StdNCDReadMutAccessor::new(&mut file))?;
-        let mut reader = NCDFileReader::new(std)?;
+        let mut reader = NCDReader::new(std)?;
         let page = reader.page(0)?;
         let value = page.lookup(1)?;
         assert_eq!(&value,&NCDLookupResult::Internal(b"Hello".to_vec(),b"World".to_vec()));
@@ -250,7 +250,7 @@ mod test {
         let mut temp_file = wrap_io_error(tempfile())?; 
         wrap_io_error(temp_file.write_all(&data))?;
         let std = wrap_io_error(StdNCDReadMutAccessor::new(&mut temp_file))?;
-        let mut reader = NCDFileReader::new(std)?;
+        let mut reader = NCDReader::new(std)?;
         let page = reader.page(0)?;
         page.lookup(1)?;       
         Ok(())      
@@ -264,7 +264,7 @@ mod test {
         let mut temp_file = wrap_io_error(tempfile())?; 
         wrap_io_error(temp_file.write_all(&tinkered))?;
         let std = wrap_io_error(StdNCDReadMutAccessor::new(&mut temp_file))?;
-        let mut reader = NCDFileReader::new(std)?;
+        let mut reader = NCDReader::new(std)?;
         let page = reader.page(0)?;
         page.lookup(1)?;
         Ok(())
@@ -298,7 +298,7 @@ mod test {
         let mut file2 = wrap_io_error(OpenOptions::new().read(true).write(true).open(file1.path()))?;
         wrap_io_error(file1.write_all(&SMOKE_FILE))?;
         let std = wrap_io_error(StdNCDReadMutAccessor::new(&mut file1))?;
-        let mut reader = NCDFileReader::new(std)?;
+        let mut reader = NCDReader::new(std)?;
         if update_header {
             update_header_stamp(&mut file2,&reader.header(),12345)?;
         }

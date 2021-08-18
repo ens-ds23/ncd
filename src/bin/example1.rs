@@ -1,7 +1,7 @@
 use std::{fmt::Display, io::{Seek, SeekFrom, Write}, process};
 use tempfile::{NamedTempFile};
 
-use ncd::{NCDBuild, NCDBuildConfig, NCDFileReader, NCDFlatConfig, NCDFlatSource, StdNCDReadMutAccessor};
+use ncd::{NCDBuild, NCDBuildConfig, NCDReader, NCDFlatConfig, NCDFlatSource, StdNCDReadMutAccessor};
 
 fn die<E: Display>(value: E) -> ! {
     eprintln!("{}",value);
@@ -30,7 +30,7 @@ fn main() {
         if success { break }
     }
     let std = die_on_error(StdNCDReadMutAccessor::new(&mut file));
-    let mut reader = die_on_error(NCDFileReader::new(std));
+    let mut reader = die_on_error(NCDReader::new(std));
     let value = die_on_error(reader.lookup(b"hello"));
     match value {
         Some(value) => { println!("hello {}",die_on_error(String::from_utf8(value))); }

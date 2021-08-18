@@ -228,7 +228,7 @@ impl<'a> NCDWriteAttempt<'a> {
 mod test {
     use std::{env::temp_dir, fs::File, path::Path};
 
-    use crate::{StdNCDReadMutAccessor, header::NCDHeader, read::{NCDFileReader }, sources::hashmap::NCDHashMapValueSource, test::{ numeric_key_values}, util::{NCDError, wrap_io_error}};
+    use crate::{StdNCDReadMutAccessor, header::NCDHeader, read::{NCDReader }, sources::hashmap::NCDHashMapValueSource, test::{ numeric_key_values}, util::{NCDError, wrap_io_error}};
 
     use super::{NCDWriteAttempt};
 
@@ -246,7 +246,7 @@ mod test {
             /**/
             let mut file = wrap_io_error(File::open(tmp_filename))?;
             let std = wrap_io_error(StdNCDReadMutAccessor::new(&mut file))?;
-            let mut reader = NCDFileReader::new(std)?;
+            let mut reader = NCDReader::new(std)?;
             let kv = numeric_key_values(COUNT);
             let mut k_sorted = kv.keys().collect::<Vec<_>>();
             k_sorted.sort();
@@ -276,7 +276,7 @@ mod test {
             /**/
             let mut file = wrap_io_error(File::open(tmp_filename))?;
             let std = wrap_io_error(StdNCDReadMutAccessor::new(&mut file))?;
-            let mut reader = NCDFileReader::new(std)?;
+            let mut reader = NCDReader::new(std)?;
             let kv = numeric_key_values(COUNT);
             for k in kv.keys() {
                 let value = reader.lookup(k)?;
@@ -299,7 +299,7 @@ mod test {
             /**/
             let mut file = wrap_io_error(File::open(tmp_filename))?;
             let std = wrap_io_error(StdNCDReadMutAccessor::new(&mut file))?;
-            let mut reader = NCDFileReader::new(std)?;
+            let mut reader = NCDReader::new(std)?;
             let kv = numeric_key_values(COUNT);
             for k in kv.keys() {
                 let value = reader.lookup(k)?;
