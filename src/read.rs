@@ -9,7 +9,6 @@ pub trait NCDReadAccessor {
 }
 
 // XXX async
-// XXX condioitnal debugs
 
 #[cfg_attr(debug_assertions,derive(Debug,PartialEq,Eq))]
 pub(crate) enum NCDLookupResult {

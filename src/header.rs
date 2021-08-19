@@ -1,6 +1,5 @@
 use std::fs::File;
 use std::io::{Seek, SeekFrom, Write};
-use crate::NCDBuildConfig;
 use crate::bitbash::{all_set, read_u32, read_u64, write_u32, write_u64};
 use crate::read::{NCDReadAccessor};
 use crate::util::{NCDError, wrap_io_error};
