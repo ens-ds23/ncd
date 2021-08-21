@@ -12,7 +12,6 @@ mod read;
 mod sources {
     pub(crate) mod flat;
     pub(crate) mod hashmap;
-    pub(crate) mod gdbm;
 }
 mod write;
 
@@ -28,5 +27,4 @@ pub use crate::accessors::http::{ CurlNCDReadAccessor, CurlConfig };
 pub use crate::accessors::std::{ StdNCDReadMutAccessor, StdNCDReadAccessor };
 
 pub use crate::sources::flat::{ NCDFlatSource, NCDFlatConfig };
-pub use crate::sources::gdbm::NCDGdbmSource;
 pub use crate::sources::hashmap::NCDHashMapValueSource;
