@@ -62,7 +62,7 @@ pub(crate) fn example_file() -> Result<Vec<u8>,NCDError> {
     let mut builder = NCDBuild::new(&NCDBuildConfig::new().target_page_size(1024),&source,&path)?;
     loop {
         println!("Attempting to build: {}",builder.describe_attempt());
-        let success = builder.attempt()?;
+        let success = builder.attempt(|_,_| {})?;
         if success { break }
     }
     /**/

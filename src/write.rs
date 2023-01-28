@@ -1,4 +1,4 @@
-use std::{ fs::{File, OpenOptions}, io::{self, Read, Seek, SeekFrom, Write}, path::Path};
+use std::{ fs::{File, OpenOptions}, io::{self, Read, Seek, SeekFrom, Write}, path::Path, time::{Instant}};
 use tempfile::tempfile;
 use crate::{bitbash::{MAX_LESQLITE2_BYTES, compute_hash, lesqlite2_write, read_u64, read_uvar, write_bytes, write_u32, write_u64, write_uvar}, header::{HEADER_SIZE, NCDHeader }, util::{NCDError, wrap_io_error, write_blanks_to_file, write_zero_length_file}};
 
@@ -162,7 +162,8 @@ pub(crate) struct NCDWriteAttempt<'a> {
     file: File,
     aux: AuxDataFile,
     external_offset: u64,
-    threshold: u64
+    threshold: u64,
+    progress: Box<dyn FnMut(usize,f64) + 'static>
 }
 
 fn write_blank_tables(header: &NCDHeader, file: &mut File) -> Result<(),NCDError> {
@@ -186,7 +187,9 @@ fn prepare_output_file(header: &NCDHeader, path: &Path) -> Result<File,NCDError>
 }
 
 impl<'a> NCDWriteAttempt<'a> {
-    pub fn new(header: &'a NCDHeader, path: &Path, threshold: u64) -> Result<NCDWriteAttempt<'a>,NCDError> {
+    pub fn new<F>(header: &'a NCDHeader, path: &Path, threshold: u64, progress: F) 
+            -> Result<NCDWriteAttempt<'a>,NCDError>
+            where F: FnMut(usize,f64) + 'static {
         wrap_io_error(write_zero_length_file(path))?;
         let file = prepare_output_file(&header,path)?;
         let mut aux_file = AuxDataFile::new(&header)?;
@@ -194,7 +197,10 @@ impl<'a> NCDWriteAttempt<'a> {
             heap_threshold: HEADER_SIZE as u64
         };
         aux_file.write(0,&first_page)?;
-        Ok(NCDWriteAttempt { header, file, aux: aux_file, external_offset: 0, threshold })
+        Ok(NCDWriteAttempt { 
+            header, file, aux: aux_file, external_offset: 0, threshold,
+            progress: Box::new(progress)
+        })
     }
 
     fn add(&mut self, key: &[u8], value: &[u8]) -> Result<(),NCDError> {
@@ -215,9 +221,13 @@ impl<'a> NCDWriteAttempt<'a> {
     }
 
     pub fn add_all(&mut self, source: &dyn NCDValueSource) -> Result<(),NCDError> {
-        for key_value in wrap_io_error(source.iter())? {
+        let now = Instant::now();
+        for (i,key_value) in wrap_io_error(source.iter())?.enumerate() {
             let (key,value) = wrap_io_error(key_value)?;
             self.add(&key,&value)?;
+            if i % 1000000 == 0 {
+                (self.progress)(i,now.elapsed().as_millis() as f64 / 1000.);
+            }
         }
         wrap_io_error(self.file.flush())?;
         Ok(())
@@ -239,7 +249,7 @@ mod test {
             let tmp_dir = temp_dir();
             let tmp_filename = Path::new(&tmp_dir).join("test2.ncd");
             let header = NCDHeader::new(64,512-64,64,*size,0x12345678)?;
-            let mut writer = NCDWriteAttempt::new(&header,&tmp_filename,10)?;
+            let mut writer = NCDWriteAttempt::new(&header,&tmp_filename,10,|_,_| {})?;
             let source = NCDHashMapValueSource::new(numeric_key_values(COUNT));
             writer.add_all(&source)?;
             drop(writer);
@@ -269,7 +279,7 @@ mod test {
             let tmp_dir = temp_dir();
             let tmp_filename = Path::new(&tmp_dir).join("test4.ncd");
             let header = NCDHeader::new(64,512-64,64,*size,0x12345678)?;
-            let mut writer = NCDWriteAttempt::new(&header,&tmp_filename,10)?;
+            let mut writer = NCDWriteAttempt::new(&header,&tmp_filename,10,|_,_| {})?;
             let source = NCDHashMapValueSource::new(numeric_key_values(0));
             writer.add_all(&source)?;
             drop(writer);
@@ -292,7 +302,7 @@ mod test {
             let tmp_dir = temp_dir();
             let tmp_filename = Path::new(&tmp_dir).join("test5.ncd");
             let header = NCDHeader::new(0,0,0,*size,0x12345678)?;
-            let mut writer = NCDWriteAttempt::new(&header,&tmp_filename,10)?;
+            let mut writer = NCDWriteAttempt::new(&header,&tmp_filename,10,|_,_| {})?;
             let source = NCDHashMapValueSource::new(numeric_key_values(0));
             writer.add_all(&source)?;
             drop(writer);

@@ -131,7 +131,7 @@ mod test {
         let mut builder = NCDBuild::new(&NCDBuildConfig::new().target_page_size(16384).heap_wiggle_room(1.1).target_load_factor(0.75).rebuild_page_factor(1.1),&source,&dest_path)?;
         loop {
             println!("Attempting to build: {}",builder.describe_attempt());
-            let success = builder.attempt()?;
+            let success = builder.attempt(|_,_| {})?;
             if success { break; }
             println!("  {}",builder.result());
         }

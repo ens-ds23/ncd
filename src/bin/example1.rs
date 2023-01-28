@@ -26,7 +26,7 @@ fn main() {
     let mut builder = die_on_error(NCDBuild::new(&NCDBuildConfig::new().target_page_size(1024),&source,&file.path()));
     loop {
         println!("Attempting to build: {}",builder.describe_attempt());
-        let success = die_on_error(builder.attempt());
+        let success = die_on_error(builder.attempt(|_,_| {}));
         if success { break }
     }
     let std = die_on_error(StdNCDReadMutAccessor::new(&mut file));

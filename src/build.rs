@@ -155,8 +155,8 @@ impl<'a> NCDBuild<'a> {
         Ok(())
     }
 
-    pub fn attempt(&mut self) -> Result<bool,NCDError> {
-        let mut writer = NCDWriteAttempt::new(&self.header,&self.filename,self.threshold)?;
+    pub fn attempt<F>(&mut self, progress: F) -> Result<bool,NCDError> where F: Fn(usize,f64) + 'static {
+        let mut writer = NCDWriteAttempt::new(&self.header,&self.filename,self.threshold,progress)?;
         match writer.add_all(self.source) {
             Err(NCDError::TableFull) => {
                 self.failure_reason = "table overflow".to_string();
@@ -219,7 +219,7 @@ mod tests {
         }
         loop {
             println!("Attempting to build: {}",builder.describe_attempt());
-            let success = builder.attempt()?;
+            let success = builder.attempt(|_,_| {})?;
             if success { break }
         }
         /**/
@@ -257,7 +257,7 @@ mod tests {
         let mut builder = NCDBuild::new(&NCDBuildConfig::new().target_page_size(1024),&source,&tmp_filename)?;
         loop {
             println!("Attempting to build: {}",builder.describe_attempt());
-            let success = builder.attempt()?;
+            let success = builder.attempt(|_,_| {})?;
             if success { break }
         }
         /**/
@@ -310,7 +310,7 @@ mod tests {
         let mut builder = NCDBuild::new(&NCDBuildConfig::new().target_page_size(1024),&source,&tmp_filename)?;
         loop {
             println!("Attempting to build: {}",builder.describe_attempt());
-            let success = builder.attempt()?;
+            let success = builder.attempt(|_,_| {})?;
             if success { break }
         }
         /**/
